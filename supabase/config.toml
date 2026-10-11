@@ -1,0 +1,21 @@
+﻿# Only explicitly managed settings are pushed to the cloud.
+project_id = "loveapp"
+
+[db.migrations]
+enabled = true
+schema_paths = []
+
+[db.seed]
+enabled = false
+sql_paths = []
+
+[auth]
+site_url = "http://127.0.0.1:5173/"
+additional_redirect_urls = ["http://127.0.0.1:5173/", "http://localhost:5173/"]
+enable_signup = true
+enable_anonymous_sign_ins = false
+minimum_password_length = 8
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false

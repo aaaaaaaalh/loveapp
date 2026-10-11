@@ -1,0 +1,40 @@
+{
+  "at": "2026-10-11T05:35:32.218Z",
+  "projectRef": "rnramhagybuibobmketv",
+  "passed": [
+    "真实公开注册创建三个临时账号，直接获得登录会话，无需确认邮件",
+    "两个独立浏览器真实登录、创建空间、邀请加入和身份映射",
+    "真实留言持久保存、刷新恢复和跨会话同步，Realtime 已连接",
+    "真实私有照片上传、刷新大图读取和对方可见",
+    "真实匿名拒绝、跨空间六表隔离、越权写入与冒名拒绝、两人上限、私有文件访问控制",
+    "真实愿望新增、编辑、完成、刷新恢复、删除及双方同步",
+    "真实礼物新增、编辑、刷新恢复和删除",
+    "真实个人资料持久保存与双方身份正确同步",
+    "真实云端六页 × 六种宽度访问、刷新与无横向溢出",
+    "真实退出清理、刷新保持退出、浏览器无严重错误"
+  ],
+  "failure": "\nCleanup: TypeError: fetch failed",
+  "browserErrors": [],
+  "connectionWarnings": [],
+  "emailDeliveryTested": false,
+  "cleanupRecovery": {
+    "at": "2026-10-11T05:38:30.308Z",
+    "method": "Official CLI db query: exact QA UUIDs + run marker; refuse spaces with Storage objects; transactional cleanup",
+    "remainingOwnedQaUsers": 0,
+    "finalReadOnlyInventory": {
+      "businessTables": 6,
+      "allRlsEnabled": true,
+      "realtimeTables": 6,
+      "privatePhotoBucket": true,
+      "migrationApplied": true,
+      "remainingQaAccounts": 0,
+      "spaces": 0,
+      "photos": 0,
+      "letters": 0,
+      "wishes": 0,
+      "gifts": 0,
+      "storedPhotos": 0
+    },
+    "outcome": "All functional checks passed; REST cleanup failed and was completed through CLI. Original failure retained above."
+  }
+}
