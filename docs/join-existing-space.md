@@ -13,10 +13,16 @@
 - 数据库测试 9 项通过，包含原数据保留、失败回滚、切换权限、原空间对新伴侣不可见。
 - 浏览器回归 22 项通过，新增已建空间加入、错误邀请码、关闭弹窗、刷新、切回原记录及 375px 布局检查。
 - lint/build 通过；包体积提示仍存在。
-- 官方 `db push --dry-run --skip-vault` 已执行，但 PostgreSQL TCP 连接超时，不能标记成功。随后用官方 `db query --linked` 执行新迁移事务并 ROLLBACK，预演成功，六张业务表 RLS 与私有照片桶保持启用。尚未正式应用迁移。
+- 官方 `db push --dry-run --skip-vault` 已执行，但 PostgreSQL TCP 连接超时，不能标记成功。随后用官方 `db query --linked` 执行新迁移事务并 ROLLBACK，预演成功，六张业务表 RLS 与私有照片桶保持启用。
 
 ## 发布顺序
 
-待用户确认后，使用已预演的 `.tmp/migration-apply.sql` 正式应用并登记迁移历史，再推送前端。原有账号默认 is_active=true，未切换前不影响现有网站。上线后使用独立测试账号验证真实加入和切换；不要使用或清理真实用户记录。
+用户确认上线后，已使用预演的 `.tmp/migration-apply.sql` 正式应用并登记迁移历史。只读复查 migration_applied=true，每个原有账号都有一个活跃空间。未删除或迁移原业务记录。
 
-当前属于待发布修改，不能把本地及事务回滚测试说成线上功能已经上线。
+前端提交 7395fe8 已推送，GitHub Actions 运行 38206208721 的 lint、数据库测试、build、deploy 全部成功，功能已发布至 https://aaaaaaaalh.github.io/loveapp/ 。
+
+## 真实公网验收
+
+2026-10-12 05:05 UTC，真实公网脚本 12 组检查全部通过，退出码 0，failure=null、browserErrors=[]、connectionWarnings=[]。两个账号各自创建空间，第二人先保存照片和留言，再通过「我的」加入第一人的空间；刷新保持新空间，切回后原照片真实加载、原留言存在，再切回共同空间成功。第一人的账号无法读取第二人的原空间记录。
+
+原有上传、留言、愿望、礼物、资料同步、跨空间权限、六页六宽度及退出登录回归全部通过。本次临时账号和空间通过限定账号的清理逻辑删除，最终只读检查 remaining_test_accounts=0，未清空真实用户数据。报告见 [public-live-results.json](public-live-results.json)。实体手机网络未单独测试。
