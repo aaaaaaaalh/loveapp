@@ -1,8 +1,8 @@
 # Our Space · 我们的小世界
 
-LoveApp v0.3.0：为两个人设计的中文、移动端优先生活记录空间。所有代码与开发文件位于 `E:\loveapp`，直接使用此根目录的现有 Git 仓库。当前正在准备 GitHub 公开仓库和 GitHub Pages 部署，尚未正式上线；实际进度、确认步骤和后续更新方式见 [部署说明](docs/deployment.md)。
+LoveApp v0.3.0：为两个人设计的中文、移动端优先生活记录空间。所有代码与开发文件位于 `E:\loveapp`，直接使用此根目录的现有 Git 仓库。已部署至 [GitHub Pages 公网网站](https://aaaaaaaalh.github.io/loveapp/)，电脑和手机均可访问，无需本地电脑保持运行。实际验收与后续更新方式见 [部署说明](docs/deployment.md)。
 
-已接入 Supabase 登录、双人空间、持久存储和同步，复用用户的 Free 新加坡项目。两个人各自用邮箱密码注册，无需确认邮件；一人创建空间，另一人通过邀请码加入。真实测试见 docs/cloud-cli-validation.md。当前仅本地预览，未部署公网网站。使用说明见 [`docs/supabase-setup.md`](docs/supabase-setup.md)。
+已接入 Supabase 登录、双人空间、持久存储和同步，复用用户的 Free 新加坡项目。两个人各自用邮箱密码注册，无需确认邮件；一人创建空间，另一人通过邀请码加入。已有账号直接登录，勿另建空间。成功保存至云端的记录刷新后保留；未提交的输入和独立演示模式不持久保存。使用说明见 [`docs/supabase-setup.md`](docs/supabase-setup.md)。
 
 ## 本地启动
 

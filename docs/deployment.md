@@ -4,11 +4,11 @@
 
 ## 当前状态
 
-- 仓库：https://github.com/aaaaaaaalh/loveapp ，已创建并验证为 Public，尚未推送代码。创建前检查同名仓库不存在，没有覆盖或删除现有历史。
-- 预计网址：https://aaaaaaaalh.github.io/loveapp/ ，尚未上线，不能当作可用链接。无需购买域名或付费套餐；仍受 GitHub Pages 的服务额度约束。
-- 本机 GitHub CLI 已通过官方授权登录 aaaaaaaalh，workflow 权限已补充并经 CLI 验证；令牌不进入聊天或源码。代码推送与生产发布仍等待用户最终确认。
+- 仓库：https://github.com/aaaaaaaalh/loveapp ，已创建并验证为 Public，代码已推送。创建前检查同名仓库不存在，没有覆盖或删除现有历史。
+- 正式网址：https://aaaaaaaalh.github.io/loveapp/ ，已上线，HTTPS 实测 HTTP 200。首次成功部署运行：38200784618。无需购买域名或付费套餐；仍受 GitHub Pages 的服务额度约束。
+- 用户已明确确认推送并上线。GitHub CLI 的 repo/workflow 授权已验证，凭据不进入源码。
 - 用户已在应用中启用 Full access，原 .git 目录写入恢复，113 个文件已成功暂存。切换运行用户后，Git 所有权检查通过仅对当前命令设置 safe.directory=E:/loveapp 解决，不修改全局配置，不重建仓库。
-- 版本 0.3.0；拟定提交：v0.3.0 — Public deployment preparation。推送与正式发布仍须按用户最初要求展示文件和安全结果后取得确认。
+- 版本 0.3.0；首次上线提交 0a30a9b：v0.3.0 — Public deployment preparation。文件清单和安全检查在推送前已向用户展示并取得确认。
 
 ## 页面与路由
 
@@ -20,9 +20,9 @@ GitHub Pages 是静态托管，不能使用 Vercel/腾讯云的服务器路由�
 
 .github/workflows/pages.yml 使用 Node 24，npm ci → lint → 数据库本地测试 → Pages 构建 → 上传 dist → 发布。只授予 contents:read，以及发布任务所需的 pages:write、id-token:write。
 
-整个流程受仓库变量 PAGES_DEPLOY_ENABLED=true 控制。用户确认前不设置这个开关，不会因为首次推送自动上线。配置两个 Actions secrets：VITE_SUPABASE_URL、VITE_SUPABASE_PUBLISHABLE_KEY；它们是前端公开配置，编译后会出现在浏览器，secret 存储仅避免在源文件和构建日志中直接展示。不允许配置服务端管理密钥。
+整个流程受仓库变量 PAGES_DEPLOY_ENABLED=true 控制，已在用户确认后启用。两个 Actions secrets 已配置并核验名称：VITE_SUPABASE_URL、VITE_SUPABASE_PUBLISHABLE_KEY；它们是前端公开配置，编译后会出现在浏览器，secret 存储仅避免在源文件和构建日志中直接展示。不配置服务端管理密钥。
 
-在授权与确认完成后，通过 CLI 安全传入公开配置、启用 Pages 的 GitHub Actions 来源、更新原 Supabase Auth Site URL 为最终 /loveapp/ 地址，并保留两个本地 5173 回调。不会重建数据库或放宽 RLS/Storage。
+已通过 CLI 安全传入公开配置、启用 Pages 的 GitHub Actions 来源、更新原 Supabase Auth Site URL 为最终 /loveapp/ 地址，并保留两个本地 5173 回调。config diff 先确认仅两项 Auth 地址变更后执行 config push，复查 update=0，九项远端默认值保留。未重建数据库或放宽 RLS/Storage。
 
 ## 公开文件审查
 
@@ -38,9 +38,22 @@ Pages 专项脚本：node --experimental-strip-types scripts/test-github-pages.m
 
 云端只读查询没有找到原姓名“若瀚”、对方“张潋镕”、日期 2026-04-20 的空间，没有执行云端修改或删除。网站的默认姓名和测试配置已改为石若瀚。
 
-## 尚未执行
+## 公网验收
 
-GitHub 推送、设置 Actions 配置、启用 Pages、最终域名 Auth 回调，以及真实公网 HTTPS、手机网络、注册/登录、邀请、持久化、同步和权限验收均待授权/确认完成后执行。不能把本地测试说成线上已通过。
+真实公网测试使用 LOVEAPP_TEST_URL=https://aaaaaaaalh.github.io/loveapp/ 运行 scripts/test-cloud-live.mjs，报告保存为 public-live-results.json，与历史本地云端测试区分。仅创建带 run marker 的临时测试账号，清理严格限定本次账号及其空间，不删除真实用户数据。国内实体手机网络效果需要用户实际检查，不能以浏览器尺寸模拟替代。
+
+首次 GitHub Actions 的 lint、test:db、build、deploy 全部成功。重新运行本地 lint/build 通过。构建仍有大于 500 kB 的包体积提示；Actions 有旧 Node 20 action 运行时兼容性提示，本次实际在 Node 24 下成功，后续维护升级，不影响本次结果。
+
+首次公网验证全部功能通过，但清理临时空间时浏览器仍保持 Realtime 订阅，导致清理后的一次读取出现 HTTP 406。测试脚本已调整为先关闭浏览器，再清理本次临时资源；最终报告以重跑结果为准，不掩盖首轮清理阶段的问题。
+
+最终重跑（2026-10-12 03:49 UTC）11 组全部通过，退出码 0，failure=null、browserErrors=[]、connectionWarnings=[]。覆盖真实注册、登录、双人邀请、照片与留言刷新保留、愿望与礼物增改删、资料同步、匿名与跨空间隔离、私有照片、六页六尺寸和退出登录。本次临时账号与空间已清理。机器报告：[public-live-results.json](public-live-results.json)。实体手机网络和邮件投递未验证；当前无邮件确认要求，找回密码仍未实现。
+
+## 两个人开始使用
+
+1. 在电脑或手机打开上面的 HTTPS 网址。已有账号直接登录；没有账号时各自注册一个。
+2. 一人创建情侣空间，在「我的」生成邀请码；另一人选择加入对方空间并输入邀请码。不要各自创建两个空间。
+3. 上传照片或填写记录后，等待保存成功。成功保存到 Supabase 的记录刷新、换设备后仍可读取；没点保存的草稿不会自动保存。
+4. 公网网站由 GitHub 托管，关闭本地电脑不会关闭网站。源码公开，私人内容仍受 Supabase 登录、双人空间权限和私有照片桶保护。
 
 ## 后续更新
 

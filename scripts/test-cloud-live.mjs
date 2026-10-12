@@ -10,6 +10,9 @@ import { createClient } from '@supabase/supabase-js'
 const ref = process.argv[2]
 if (!/^[a-z]{20}$/.test(ref ?? '')) throw new Error('Pass the explicitly approved project reference.')
 const root = resolve(import.meta.dirname, '..')
+const baseUrl = process.env.LOVEAPP_TEST_URL || 'http://127.0.0.1:5173/'
+const pageUrl = path => baseUrl.includes('github.io/') ? `${baseUrl}#${path}` : new URL(path, baseUrl).href
+const reportFile = process.env.LOVEAPP_TEST_URL ? 'docs/public-live-results.json' : 'docs/cloud-live-results.json'
 const env = await readFile(resolve(root, '.env.local'), 'utf8')
 const url = env.match(/^VITE_SUPABASE_URL=(.+)$/m)?.[1].trim()
 const publishable = env.match(/^VITE_SUPABASE_PUBLISHABLE_KEY=(.+)$/m)?.[1].trim()
@@ -60,7 +63,7 @@ const pass = name => { checks.push(name); console.log(`PASS ${name}`) }
 function ok(result) { if (result.error) throw new Error(result.error.message); return result.data }
 async function journal() { await writeFile(resolve(root, '.tmp/live-qa-owned.json'), JSON.stringify({ ref, runId, users: users.map(u => u.id), spaces }), 'utf8') }
 async function login(page, user) {
-  await page.goto('/')
+  await page.goto(pageUrl('/'))
   await page.getByLabel('邮箱', { exact: true }).fill(user.email)
   await page.getByLabel('密码', { exact: true }).fill(user.password)
   await page.getByRole('button', { name: '回到我们的小世界' }).click()
@@ -71,7 +74,7 @@ async function nav(page, name) {
 }
 async function closed(page) { await expect(page.getByRole('dialog')).toHaveCount(0, { timeout: 30000 }) }
 async function pageFor(user) {
-  const context = await browser.newContext({ baseURL: 'http://127.0.0.1:5173', viewport: { width: 390, height: 844 }, timezoneId: 'Asia/Shanghai', locale: 'zh-CN', reducedMotion: 'reduce' })
+  const context = await browser.newContext({ baseURL: baseUrl, viewport: { width: 390, height: 844 }, timezoneId: 'Asia/Shanghai', locale: 'zh-CN', reducedMotion: 'reduce' })
   const page = await context.newPage()
   page.setDefaultTimeout(30000)
   page.on('pageerror', error => errors.push(sanitize(error.message)))
@@ -97,11 +100,11 @@ try {
   }
   browser = await chromium.launch({ channel: 'chrome', headless: true, proxy, env: { ...process.env, TEMP: resolve(root, '.tmp'), TMP: resolve(root, '.tmp') } })
   transportPage = await browser.newPage()
-  await transportPage.goto('http://127.0.0.1:5173/')
+  await transportPage.goto(baseUrl)
   if (!cleanupOnly) {
   await journal()
   const registrationPage = await browser.newPage()
-  await registrationPage.goto('http://127.0.0.1:5173/')
+  await registrationPage.goto(baseUrl)
   for (const suffix of ['a', 'b', 'outside']) {
     const email = `${runId}-${suffix}@example.test`
     const password = randomBytes(24).toString('base64url')
@@ -240,7 +243,8 @@ try {
   for (const width of [375, 390, 430, 768, 1024, 1440]) {
     await a.setViewportSize({ width, height: 900 })
     for (const path of ['/', '/photos', '/letters', '/wishes', '/gifts', '/profile']) {
-      await a.goto(path)
+      await a.goto(pageUrl(path))
+      await a.reload()
       await expect(a.locator('main h1')).toBeVisible({ timeout: 30000 })
       assert.equal(await a.evaluate(() => globalThis.document.documentElement.scrollWidth <= globalThis.innerWidth), true, `${path} ${width}px`)
     }
@@ -261,6 +265,9 @@ try {
   console.error(`FAIL ${failure}`)
   process.exitCode = 1
 } finally {
+  // Stop realtime clients before deleting their temporary accounts and spaces.
+  // Otherwise cleanup can race UI refetches and produce misleading HTTP 406s.
+  await browser?.close()
   try {
     // Only resources owned by this run's explicitly recorded temporary users.
     const verifiedUsers = ok(await admin.auth.admin.listUsers({ page: 1, perPage: 1000 })).users
@@ -280,5 +287,5 @@ try {
     pass('已清理本次临时账号、测试空间与照片；未清空已有用户数据')
   } catch (error) { failure = `${failure ?? ''}\nCleanup: ${sanitize(error.message)}`; process.exitCode = 1; console.error(`Cleanup requires review: ${sanitize(error.message)}; owned IDs remain in the ignored journal.`) }
   await browser?.close()
-  await writeFile(resolve(root, 'docs/cloud-live-results.json'), JSON.stringify({ at: new Date().toISOString(), projectRef: ref, passed: checks, failure: failure ?? null, browserErrors: errors, connectionWarnings, emailDeliveryTested: false }, null, 2), 'utf8')
+  await writeFile(resolve(root, reportFile), JSON.stringify({ at: new Date().toISOString(), baseUrl, projectRef: ref, passed: checks, failure: failure ?? null, browserErrors: errors, connectionWarnings, emailDeliveryTested: false }, null, 2), 'utf8')
 }
