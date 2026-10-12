@@ -1,6 +1,6 @@
 {
-  "at": "2026-10-12T03:49:39.034Z",
-  "fileCount": 114,
+  "at": "2026-10-12T05:00:42.451Z",
+  "fileCount": 117,
   "files": [
     ".env.example",
     ".github/workflows/pages.yml",
@@ -17,6 +17,7 @@
     "docs/deployment-security.json",
     "docs/deployment.md",
     "docs/github-pages-tests.json",
+    "docs/join-existing-space.md",
     "docs/next-phase-plan.md",
     "docs/public-live-results.json",
     "docs/reference-analysis.md",
@@ -51,6 +52,7 @@
     "src/components/EmptyState.tsx",
     "src/components/GiftEditor.tsx",
     "src/components/InvitePartner.tsx",
+    "src/components/JoinSpace.tsx",
     "src/components/LetterComposer.tsx",
     "src/components/LetterReader.tsx",
     "src/components/Modal.tsx",
@@ -107,6 +109,7 @@
     "supabase/checks/preflight.sql",
     "supabase/config.toml",
     "supabase/migrations/202610100001_private_space.sql",
+    "supabase/migrations/202610120001_join_existing_space.sql",
     "tailwind.config.ts",
     "tests/cloud.spec.ts",
     "tests/cloudMock.ts",

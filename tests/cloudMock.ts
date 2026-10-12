@@ -11,7 +11,7 @@ export function createCloudMock(ready = true, paired = true) {
   const spaceId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
   const rows: Record<string, Row[]> = {
     spaces: ready ? [{ id: spaceId, name_a: '石若瀚', name_b: '张潋镕', start_date: '2026-04-20' }] : [],
-    space_members: ready ? [{ space_id: spaceId, user_id: ids.me, slot: 0 }, ...(paired ? [{ space_id: spaceId, user_id: ids.partner, slot: 1 }] : [])] : [],
+    space_members: ready ? [{ space_id: spaceId, user_id: ids.me, slot: 0, is_active: true }, ...(paired ? [{ space_id: spaceId, user_id: ids.partner, slot: 1, is_active: true }] : [])] : [],
     photos: [], letters: [], wishes: [], gifts: []
   }
   const files = new Set<string>()
@@ -72,15 +72,24 @@ export function createCloudMock(ready = true, paired = true) {
       if (held && method === 'POST' && path === '/rest/v1/letters') await held
       if (path.startsWith('/rest/v1/rpc/')) {
         const rpc = path.split('/').at(-1)
+        if (rpc === 'my_spaces') {
+          await reply(rows.space_members.filter(m => m.user_id === userId).map(m => ({ ...rows.spaces.find(s => s.id === m.space_id), ...m }))); return
+        }
+        if (rpc === 'switch_space') {
+          if (!rows.space_members.some(m => m.user_id === userId && m.space_id === body.p_space_id)) { await error('你还没有加入这个空间。'); return }
+          rows.space_members.filter(m => m.user_id === userId).forEach(m => { m.is_active = m.space_id === body.p_space_id })
+          await reply(null); return
+        }
         if (rpc === 'create_space') {
           rows.spaces = [{ id: spaceId, name_a: body.p_my_name, name_b: body.p_partner_name, start_date: body.p_start_date }]
-          rows.space_members = [{ space_id: spaceId, user_id: userId, slot: 0 }]
+          rows.space_members = [{ space_id: spaceId, user_id: userId, slot: 0, is_active: true }]
           await reply(spaceId); return
         }
         if (rpc === 'create_space_invite') { invite = randomUUID().replaceAll('-', '') + randomUUID().replaceAll('-', ''); await reply(invite); return }
         if (rpc === 'join_space') {
-          if (!invite || body.p_code !== invite || rows.space_members.length >= 2) { await error('邀请码无效或已经使用，请让对方重新生成。'); return }
-          rows.space_members.push({ space_id: spaceId, user_id: userId, slot: 1 })
+          if (!invite || body.p_code !== invite || rows.space_members.filter(m => m.space_id === spaceId).length >= 2) { await error('邀请码无效或已经使用，请让对方重新生成。'); return }
+          rows.space_members.filter(m => m.user_id === userId).forEach(m => { m.is_active = false })
+          rows.space_members.push({ space_id: spaceId, user_id: userId, slot: 1, is_active: true })
           rows.spaces[0].name_b = body.p_nickname
           invite = ''
           await reply(spaceId)

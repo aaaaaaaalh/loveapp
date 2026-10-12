@@ -28,6 +28,7 @@ test('private-space migration and database permissions', async t => {
     grant select, insert, delete on storage.objects to authenticated;
   `)
   await db.exec(await readFile('supabase/migrations/202610100001_private_space.sql', 'utf8'))
+  await db.exec(await readFile('supabase/migrations/202610120001_join_existing_space.sql', 'utf8'))
   const asUser = async (id: string | null) => {
     await db.exec('reset role')
     await db.query("select set_config('request.jwt.claim.sub', $1, false)", [id ?? ''])
@@ -127,6 +128,34 @@ test('private-space migration and database permissions', async t => {
       const row = (await db.query<{ name_a: string; name_b: string; start_date: null }>('select name_a,name_b,start_date from public.spaces')).rows[0]
       assert.deepEqual(row, { name_a: '男友更新昵称', name_b: '女友更新昵称', start_date: null })
       await assert.rejects(() => db.query('select public.update_space_profile($1,$2,$3,null)', [space, '', '有效']), /check constraint/)
+    })
+    await t.test('existing solo space is preserved when joining, invalid invites roll back and switching is private', async () => {
+      const d = '44444444-4444-4444-8444-444444444444'
+      await db.exec('reset role')
+      await db.query('insert into auth.users values ($1)', [d])
+      await asUser(d)
+      const own = (await db.query<{id: string}>("select public.create_space('原来', '空间', null) as id")).rows[0].id
+      await db.query("insert into public.letters(space_id,author_id,content) values ($1,$2,'原有记录')", [own,d])
+      const ownCode = (await db.query<{code: string}>('select public.create_space_invite($1) as code',[own])).rows[0].code
+      await assert.rejects(() => db.query('select public.join_space($1,$2)',[ownCode,'我']), /已经加入/)
+      await assert.rejects(() => db.query("select public.join_space('wrong','我')"), /邀请码无效/)
+      assert.equal((await db.query<{space_id: string}>('select space_id from public.space_members where user_id=$1 and is_active',[d])).rows[0].space_id,own)
+      await asUser(c)
+      const invite = (await db.query<{code: string}>('select public.create_space_invite($1) as code',[otherSpace])).rows[0].code
+      await asUser(d)
+      await db.query('select public.join_space($1,$2)',[invite,'新昵称'])
+      assert.equal((await db.query('select * from public.my_spaces()')).rows.length,2)
+      assert.equal((await db.query<{space_id: string}>('select space_id from public.space_members where user_id=$1 and is_active',[d])).rows[0].space_id,otherSpace)
+      assert.equal((await db.query('select * from public.letters where space_id=$1',[own])).rows.length,1)
+      await db.query('select public.switch_space($1)',[own])
+      await assert.rejects(() => db.query('select public.create_space_invite($1)',[own]), /已经有双人空间/)
+      await assert.rejects(() => db.query('select public.switch_space($1)',[space]), /没有加入/)
+      await asUser(c)
+      assert.equal((await db.query('select * from public.letters where space_id=$1',[own])).rows.length,0)
+      assert.equal((await db.query('select * from public.my_spaces()')).rows.length,1)
+      await asUser(null)
+      await assert.rejects(() => db.query('select * from public.my_spaces()'), /permission denied/)
+      await assert.rejects(() => db.query('select public.switch_space($1)',[own]), /permission denied/)
     })
   } finally { await db.close() }
 })

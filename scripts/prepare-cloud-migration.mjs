@@ -6,8 +6,11 @@ import { resolve } from 'node:path'
 // Used when db push cannot reach Postgres TCP. Run the rollback file first,
 // verify an empty inventory, then apply through the official db query CLI.
 const root = resolve(import.meta.dirname, '..')
-const version = '202610100001'
-const name = 'private_space'
+const migration = process.argv[2] ?? '202610100001_private_space'
+if (!/^\d{12}_[a-z_]+$/.test(migration)) throw new Error('Expected a migration name without a path or extension.')
+const separator = migration.indexOf('_')
+const version = migration.slice(0, separator)
+const name = migration.slice(separator + 1)
 const source = await readFile(resolve(root, `supabase/migrations/${version}_${name}.sql`), 'utf8')
 if (!/\bbegin;/.test(source) || !/commit;\s*$/.test(source)) throw new Error('Expected one explicit migration transaction.')
 const body = source.replace(/\bbegin;/, '').replace(/commit;\s*$/, '')
@@ -26,7 +29,7 @@ select '${version}' as migration_version,
 `
 await mkdir(resolve(root, '.tmp'), { recursive: true })
 for (const [mode, ending] of [['plan', 'rollback'], ['apply', 'commit']]) {
-  await writeFile(resolve(root, `.tmp/migration-${mode}.sql`), `begin;\n${body}\n${ledger}\n${ending};\n`, 'utf8')
+  await writeFile(resolve(root, `.tmp/migration-${mode}.sql`), `begin;\nset local lock_timeout = '5s';\nset local statement_timeout = '30s';\n${body}\n${ledger}\n${ending};\n`, 'utf8')
 }
 await writeFile(resolve(root, '.tmp/cloud-migration-source.sha256'), createHash('sha256').update(source).digest('hex'), 'utf8')
 console.log('Generated .tmp/migration-plan.sql (ROLLBACK) and migration-apply.sql (COMMIT + migration history). No database changes were made.')

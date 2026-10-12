@@ -369,7 +369,7 @@ input, textarea, select { min-width: 0; }
 .account-panel p, .invite-panel > p { font-size: 11px; color: #aa9080; line-height: 1.9; margin-top: 9px; overflow-wrap: anywhere; }
 .account-panel p { display: flex; align-items: center; gap: 5px; }
 .account-panel .account-email { display: block; }
-.invite-panel .btn { margin: 14px 0; }
+.invite-panel .btn { margin: 14px 0; max-width: 100%; overflow-wrap: anywhere; }
 .invite-panel textarea { font-family: monospace; font-size: 13px; overflow-wrap: anywhere; }
 .invite-panel small { display: block; font-size: 10px; line-height: 1.9; color: #ab9282; }
 .sync-notice { position: relative; z-index: 45; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 10px 20px; background: #fbf0d8; color: #a28248; font-size: 11px; line-height: 1.8; overflow-wrap: anywhere; }

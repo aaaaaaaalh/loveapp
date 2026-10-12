@@ -23,7 +23,7 @@ function CloudSpace({ userId, children }: { userId: string; children: ReactNode 
     let active = true
     let repository: RemoteRepository | undefined
     const load = async () => {
-      const { data, error } = await supabase!.from('space_members').select('space_id,user_id,slot').eq('user_id', userId).maybeSingle<MemberRow>()
+      const { data, error } = await supabase!.from('space_members').select('space_id,user_id,slot').eq('user_id', userId).eq('is_active', true).maybeSingle<MemberRow>()
       if (error) throw error
       if (!active) return
       if (!data) { setState({ kind: 'onboarding' }); return }

@@ -13,6 +13,7 @@ docs/deployment-preview-results.json
 docs/deployment-security.json
 docs/deployment.md
 docs/github-pages-tests.json
+docs/join-existing-space.md
 docs/next-phase-plan.md
 docs/public-live-results.json
 docs/reference-analysis.md
@@ -47,6 +48,7 @@ src/components/ConfirmDialog.tsx
 src/components/EmptyState.tsx
 src/components/GiftEditor.tsx
 src/components/InvitePartner.tsx
+src/components/JoinSpace.tsx
 src/components/LetterComposer.tsx
 src/components/LetterReader.tsx
 src/components/Modal.tsx
@@ -103,6 +105,7 @@ supabase/checks/acceptance.sql
 supabase/checks/preflight.sql
 supabase/config.toml
 supabase/migrations/202610100001_private_space.sql
+supabase/migrations/202610120001_join_existing_space.sql
 tailwind.config.ts
 tests/cloud.spec.ts
 tests/cloudMock.ts
