@@ -67,6 +67,38 @@ test('existing space can join by invitation and switch back without losing recor
   } finally { await context.close() }
 })
 
+test('upload for a partner preserves attribution after refresh and across accounts', async ({ page, browser }) => {
+  const backend = createCloudMock()
+  await backend.attach(page)
+  await login(page)
+  await navigate(page, '照片')
+  await page.getByRole('button', { name: '上传照片', exact: true }).click()
+  await page.getByLabel('选择本地图片').setInputFiles(resolve('tests/fixtures/flowers.jpg'))
+  await page.getByLabel('图片 1 描述').fill('替对方记录')
+  await page.getByRole('button', { name: '张潋镕', exact: true }).click()
+  await page.getByRole('button', { name: /保存照片/ }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(page.locator('.photo-card-info')).toContainText('张潋镕')
+  expect(backend.rows.photos[0].author_id).toBe(backend.ids.me)
+  expect(backend.rows.photos[0].display_author_id).toBe(backend.ids.partner)
+  expect(backend.rows.photos[0].storage_path).toContain(`/${backend.ids.me}/`)
+  await page.reload()
+  await page.getByRole('button', { name: '张潋镕的镜头' }).click()
+  await expect(page.locator('.photo-card')).toHaveCount(1)
+  await page.getByRole('button', { name: '石若瀚的镜头' }).click()
+  await expect(page.locator('.photo-card')).toHaveCount(0)
+  const context = await browser.newContext({ baseURL: 'http://127.0.0.1:5177', viewport: { width: 390, height: 844 } })
+  try {
+    const partner = await context.newPage()
+    await backend.attach(partner)
+    await login(partner, 'partner@example.test')
+    await navigate(partner, '照片')
+    await expect(partner.locator('.photo-card-info')).toContainText('张潋镕')
+    await partner.getByRole('button', { name: '张潋镕的镜头' }).click()
+    await expect(partner.locator('.photo-card')).toHaveCount(1)
+  } finally { await context.close() }
+})
+
 test('login/register states fit all target widths and report invalid credentials', async ({ page }) => {
   const backend = createCloudMock()
   await backend.attach(page)

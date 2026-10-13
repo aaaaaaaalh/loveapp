@@ -12,7 +12,7 @@ import type { PersonId } from '../types/domain'
 interface SelectedFile { src: string; description: string; ratio: number; ready: boolean; name: string }
 
 export function PhotoUpload({ onClose }: { onClose: () => void }) {
-  const { actions, isDemo } = useSpace()
+  const { actions, isDemo, memberCount } = useSpace()
   const { pending, error: saveError, save } = useSave()
   const objectUrls = useObjectUrls()
   const [selected, setSelected] = useState<SelectedFile[]>([])
@@ -38,7 +38,7 @@ export function PhotoUpload({ onClose }: { onClose: () => void }) {
     <label className="upload-dropzone"><ImagePlus size={32} strokeWidth={1.4} /><strong>{selected.length ? '重新选择图片' : '选择想收藏的照片'}</strong><span>JPG / PNG / WebP / GIF / AVIF，每张不超过 12 MB</span><input disabled={pending} type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" multiple onChange={chooseFiles} aria-label="选择本地图片" /></label>
     {(error || saveError) && <p className="form-error" role="alert">{error || saveError}</p>}
     {!!selected.length && <div className="upload-previews">{selected.map((file, index) => <div key={file.src} className="upload-preview"><div><img src={file.src} alt={`待上传图片 ${index + 1}`} onLoad={event => { const { naturalWidth, naturalHeight } = event.currentTarget; setSelected(items => items.map(item => item.src === file.src ? { ...item, ready: true, ratio: naturalWidth / naturalHeight } : item)) }} onError={() => { remove(file.src); setError('有一张图片无法读取，请换一张试试。') }} /><button type="button" disabled={pending} className="preview-remove" aria-label={`移除图片 ${index + 1}`} onClick={() => remove(file.src)}><X size={15} /></button></div><label><span className="sr-only">图片 {index + 1} 描述</span><input disabled={pending} value={file.description} maxLength={120} placeholder="给这张照片写一句话…" onChange={event => setSelected(items => items.map(item => item.src === file.src ? { ...item, description: event.target.value } : item))} /></label></div>)}</div>}
-    <PersonPicker disabled={pending} value={author} onChange={setAuthor} /><label className="form-field"><span>这一天</span><input disabled={pending} type="date" required value={date} max={localDateString()} onChange={event => setDate(event.target.value)} /></label>
+    <PersonPicker disabled={pending} value={author} onChange={setAuthor} allowBoth label="这张照片记在谁的名下" />{!isDemo && <p className="form-notice">{memberCount === 2 ? '可以替对方上传，照片会按所选名字展示。' : '对方加入当前空间后，就可以选择对方的名字。'}</p>}<label className="form-field"><span>这一天</span><input disabled={pending} type="date" required value={date} max={localDateString()} onChange={event => setDate(event.target.value)} /></label>
     <div className="form-actions"><Button variant="secondary" disabled={pending} onClick={onClose}>取消</Button><Button type="submit" disabled={pending || !selected.length || selected.some(file => !file.ready)}>{pending ? '正在保存…' : isDemo ? '加入本次演示' : '保存照片'}{selected.length ? ` · ${selected.length} 张` : ''}</Button></div>
   </form></Modal>
 }

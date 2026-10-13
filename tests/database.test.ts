@@ -29,6 +29,7 @@ test('private-space migration and database permissions', async t => {
   `)
   await db.exec(await readFile('supabase/migrations/202610100001_private_space.sql', 'utf8'))
   await db.exec(await readFile('supabase/migrations/202610120001_join_existing_space.sql', 'utf8'))
+  await db.exec(await readFile('supabase/migrations/202610130001_photo_attribution.sql', 'utf8'))
   const asUser = async (id: string | null) => {
     await db.exec('reset role')
     await db.query("select set_config('request.jwt.claim.sub', $1, false)", [id ?? ''])
@@ -121,6 +122,19 @@ test('private-space migration and database permissions', async t => {
       assert.equal((await db.query('select * from storage.objects')).rows.length, 0)
       await asUser(null)
       assert.equal((await db.query('select * from storage.objects')).rows.length, 0)
+    })
+    await t.test('photo display author can be a partner but uploader and space boundaries remain enforced', async () => {
+      await asUser(a)
+      const query = 'insert into public.photos(space_id,author_id,display_author_id,storage_path,photo_date,ratio) values ($1,$2,$3,$4,current_date,1) returning author_id,display_author_id'
+      const row = (await db.query(query,[space,a,b,`${space}/${a}/for-partner.jpg`])).rows[0]
+      assert.deepEqual(row,{author_id:a,display_author_id:b})
+      await assert.rejects(() => db.query(query,[space,a,c,`${space}/${a}/outside.jpg`]), /foreign key/)
+      await assert.rejects(() => db.query(query,[space,b,a,`${space}/${b}/fake-uploader.jpg`]), /row-level security/)
+      await assert.rejects(() => db.query(query,[space,a,b,`${space}/${b}/fake-path.jpg`]), /check constraint/)
+      await asUser(b)
+      assert.equal((await db.query<{ display_author_id: string }>('select display_author_id from public.photos where storage_path=$1',[`${space}/${a}/for-partner.jpg`])).rows[0].display_author_id,b)
+      await asUser(c)
+      assert.equal((await db.query('select id from public.photos where space_id=$1',[space])).rows.length,0)
     })
     await t.test('profile mapping respects both members and optional dates', async () => {
       await asUser(b)

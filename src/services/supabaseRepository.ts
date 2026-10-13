@@ -66,7 +66,7 @@ export function createSupabaseRepository(client: SupabaseClient, membership: Mem
         me: { id: 'me', name: myName, avatar: slot === 0 ? '/images/avatar-me.svg' : '/images/avatar-partner.svg' },
         partner: { id: 'partner', name: otherName, avatar: slot === 0 ? '/images/avatar-partner.svg' : '/images/avatar-me.svg' }
       } },
-      photos: rows.map(row => ({ id: row.id, src: signedUrls.get(row.storage_path)!.url, description: row.description, date: row.photo_date, ratio: row.ratio, author: person(row.author_id) })),
+      photos: rows.map(row => ({ id: row.id, src: signedUrls.get(row.storage_path)!.url, description: row.description, date: row.photo_date, ratio: row.ratio, author: person(row.display_author_id ?? row.author_id) })),
       letters: lettersResult.data!.map(mapLetter), wishes: wishesResult.data!.map(mapWish), gifts: giftsResult.data!.map(mapGift)
     })
     previewUrls.forEach(url => URL.revokeObjectURL(url))
@@ -123,11 +123,13 @@ export function createSupabaseRepository(client: SupabaseClient, membership: Mem
     addPhotos: async photos => {
       ensureActive()
       const uploaded: string[] = []
-      const rows: { space_id: string; author_id: string; storage_path: string; description: string; photo_date: string; ratio: number }[] = []
+      const rows: { space_id: string; author_id: string; display_author_id: string; storage_path: string; description: string; photo_date: string; ratio: number }[] = []
       let saved = false
       try {
         for (const photo of photos) {
           ensureActive()
+          const displayAuthor = photo.author === 'me' ? userId : members.find(member => member.user_id !== userId)?.user_id
+          if (!displayAuthor) throw new Error('请先邀请对方加入当前空间，再替对方上传照片。')
           if (!photo.local || !photo.src.startsWith('blob:')) throw new Error('请选择本地图片文件。')
           const blob = await (await fetch(photo.src)).blob()
           const extensions: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif', 'image/avif': 'avif' }
@@ -137,14 +139,14 @@ export function createSupabaseRepository(client: SupabaseClient, membership: Mem
           const { error } = await client.storage.from(bucket).upload(path, blob, { contentType: blob.type, upsert: false })
           if (error) throw error
           uploaded.push(path)
-          rows.push({ space_id: spaceId, author_id: userId, storage_path: path, description: photo.description, photo_date: photo.date, ratio: photo.ratio })
+          rows.push({ space_id: spaceId, author_id: userId, display_author_id: displayAuthor, storage_path: path, description: photo.description, photo_date: photo.date, ratio: photo.ratio })
         }
         ensureActive()
         const { data: records, error } = await client.from('photos').insert(rows).select('*').returns<PhotoRow[]>()
         if (error) throw error
         saved = true
         photos.forEach(photo => previewUrls.add(photo.src))
-        emit({ ...data, photos: [...records!.map(row => ({ ...photos[rows.findIndex(item => item.storage_path === row.storage_path)], id: row.id, author: 'me' as const, local: false })), ...data.photos.filter(item => !records!.some(row => row.id === item.id))] })
+        emit({ ...data, photos: [...records!.map(row => ({ ...photos[rows.findIndex(item => item.storage_path === row.storage_path)], id: row.id, author: person(row.display_author_id ?? row.author_id), local: false })), ...data.photos.filter(item => !records!.some(row => row.id === item.id))] })
         await afterWrite()
       } catch (error) {
         if (!saved && uploaded.length) {
